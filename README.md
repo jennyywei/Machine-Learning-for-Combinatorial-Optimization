@@ -5,6 +5,16 @@ Step-by-step demo of MVC solution found by different methods.
 From left to right: (1) S2V-DQN (our method), (2) node-degree heuristic, (3) edge-degree heuristic
 ![demo](https://github.com/Hanjun-Dai/graph_comb_opt/blob/master/visualize/mvc-40-50.gif)
 
+# 0. Environment setup (Stanford Farmshare / OAT)
+
+    source setup_env.sh
+
+To recreate the virtual environment from scratch:
+
+    python -m venv ~/venvs/math195
+    source ~/venvs/math195/bin/activate
+    pip install -r requirements.txt
+
 # 1. build
 
 **** Below shows an example of MVC. For all the problems, you can follow the similar pipeline ****
