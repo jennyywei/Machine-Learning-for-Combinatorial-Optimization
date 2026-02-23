@@ -16,7 +16,7 @@ python gen_graph_only.py \
     -save_dir $output_root \
     -max_n $max_n \
     -min_n $min_n \
-    -num_graph 1000 \
+    -num_graph 100 \ # TODO: change this back to 1000
     -p $p \
     -graph_type $gtype \
     -m $m

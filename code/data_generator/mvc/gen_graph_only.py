@@ -1,6 +1,6 @@
 import os
 import sys
-import cPickle as cp
+import pickle as cp
 import random
 import numpy as np
 import networkx as nx
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     numgenerated = 0
     i = 0
     while numgenerated < num_graph:
-        print i
+        print(i)
         i += 1
         cur_n = np.random.randint(max_n - min_n + 1) + min_n
         if graph_type == 'erdos_renyi':

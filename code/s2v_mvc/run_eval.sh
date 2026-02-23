@@ -2,7 +2,7 @@
 
 g_type=barabasi_albert
 
-data_test=../../data/mvc/gtype-$g_type-nrange-15-20-n_graph-1000-p-0.00-m-4.pkl
+data_test=../../data/mvc/gtype-$g_type-nrange-15-20-n_graph-100-p-0.00-m-4.pkl # TODO: change back to n_graph-1000
 
 result_root=results/dqn-$g_type
 

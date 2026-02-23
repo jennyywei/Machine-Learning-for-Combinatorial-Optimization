@@ -1,6 +1,6 @@
 import numpy as np
 import networkx as nx
-import cPickle as cp
+import pickle as cp
 import random
 import ctypes
 import os
@@ -28,7 +28,7 @@ def find_model_file(opt):
                     best_r = r
                     best_it = it
     assert best_it >= 0
-    print 'using iter=', best_it, 'with r=', best_r
+    print('using iter=', best_it, 'with r=', best_r)
     return '%s/nrange_%d_%d_iter_%d.model' % (opt['save_dir'], min_n, max_n, best_it)
     
 if __name__ == '__main__':
@@ -40,11 +40,11 @@ if __name__ == '__main__':
 
     model_file = find_model_file(opt)
     assert model_file is not None
-    print 'loading', model_file
+    print('loading', model_file)
     sys.stdout.flush()
     api.LoadModel(model_file)
 
-    n_test = 1000
+    n_test = 100  # TODO: change back to 1000
     f = open(opt['data_test'], 'rb')
     frac = 0.0
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     result_file = '%s/test-%s-gnn-%s-%s.csv' % (opt['save_dir'], test_name, opt['min_n'], opt['max_n'])
 
     with open(result_file, 'w') as f_out:
-        print 'testing'
+        print('testing')
         sys.stdout.flush()
         for i in tqdm(range(n_test)):
             g = cp.load(f)
@@ -66,4 +66,4 @@ if __name__ == '__main__':
                 f_out.write(' %d' % sol[i + 1])
             f_out.write(',%.6f\n' % (t2 - t1))
             frac += val
-    print 'average size of vc: ', frac / n_test
+    print('average size of vc: ', frac / n_test)

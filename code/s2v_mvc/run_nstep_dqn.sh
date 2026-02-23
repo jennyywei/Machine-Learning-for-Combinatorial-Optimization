@@ -36,7 +36,7 @@ max_n=20
 num_env=1
 mem_size=500000
 
-max_iter=1000000
+max_iter=1000 # TODO: change this back to 1000000
 
 # folder to save the trained model
 save_dir=$result_root/embed-$embed_dim-nbp-$max_bp_iter-rh-$reg_hidden

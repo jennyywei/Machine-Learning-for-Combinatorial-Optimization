@@ -1,6 +1,6 @@
 import numpy as np
 import networkx as nx
-import cPickle as cp
+import pickle as cp
 import random
 import ctypes
 import os
@@ -25,7 +25,7 @@ def gen_graph(opt):
     return g
 
 def gen_new_graphs(opt):
-    print 'generating new training graphs'
+    print('generating new training graphs')
     sys.stdout.flush()
     api.ClearTrainGraphs()
     for i in tqdm(range(1000)):
@@ -33,7 +33,7 @@ def gen_new_graphs(opt):
         api.InsertGraph(g, is_test=False)
 
 def PrepareValidData(opt):
-    print 'generating validation graphs'
+    print('generating validation graphs')
     sys.stdout.flush()
     for i in tqdm(range(n_valid)):
         g = gen_graph(opt)
@@ -44,7 +44,7 @@ def find_model_file(opt):
     min_n = int(opt['min_n'])
     log_file = None
     if max_n < 100:
-	return None
+        return None
     if min_n == 50 and max_n == 100:
         return None
     elif min_n == 100 and max_n == 200:
@@ -56,7 +56,7 @@ def find_model_file(opt):
 
     log_file = '%s/log-%d-%d.txt' % (opt['save_dir'], n1, n2)
     if not os.path.isfile(log_file):
-	return None
+        return None
     best_r = -1000000
     best_it = -1
     with open(log_file, 'r') as f:
@@ -70,22 +70,22 @@ def find_model_file(opt):
                     best_it = it
     if best_it < 0:
         return None
-    print best_it, best_r
+    print(best_it, best_r)
     return '%s/nrange_%d_%d_iter_%d.model' % (opt['save_dir'], n1, n2, best_it)
-    
+
 if __name__ == '__main__':
     api = MvcLib(sys.argv)
-    
+
     opt = {}
     for i in range(1, len(sys.argv), 2):
         opt[sys.argv[i][1:]] = sys.argv[i + 1]
 
     model_file = find_model_file(opt)
     if model_file is not None:
-        print 'loading', model_file
+        print('loading', model_file)
         sys.stdout.flush()
         api.LoadModel(model_file)
-    
+
     PrepareValidData(opt)
 
     # startup
@@ -108,7 +108,7 @@ if __name__ == '__main__':
             frac = 0.0
             for idx in range(n_valid):
                 frac += api.lib.Test(idx)
-            print 'iter', iter, 'eps', eps, 'average size of vc: ', frac / n_valid
+            print('iter', iter, 'eps', eps, 'average size of vc: ', frac / n_valid)
             sys.stdout.flush()
             model_path = '%s/nrange_%d_%d_iter_%d.model' % (opt['save_dir'], int(opt['min_n']), int(opt['max_n']), iter)
             api.SaveModel(model_path)
