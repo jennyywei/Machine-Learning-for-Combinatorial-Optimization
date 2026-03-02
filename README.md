@@ -6,6 +6,12 @@ From left to right: (1) S2V-DQN (our method), (2) node-degree heuristic, (3) edg
 ![demo](https://github.com/Hanjun-Dai/graph_comb_opt/blob/master/visualize/mvc-40-50.gif)
 
 # 0. Environment setup (Stanford Farmshare / OAT)
+To start Farmshare:
+
+    ssh yoursunet@login.farmshare.stanford.edu 
+    srun --partition=gpu --gres=gpu:1 --pty bash
+
+To set up GPU:
 
     source setup_env.sh
 
