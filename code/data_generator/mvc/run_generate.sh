@@ -5,7 +5,7 @@ max_n=20
 gtype=barabasi_albert
 p=0.00
 m=4
-output_root=../../../data/mvc
+output_root=../../../data/test_mvc_maxcut
 
 if [ ! -e $output_root ];
 then
@@ -16,7 +16,7 @@ python gen_graph_only.py \
     -save_dir $output_root \
     -max_n $max_n \
     -min_n $min_n \
-    -num_graph 100 \ # TODO: change this back to 1000
+    -num_graph 100 \
     -p $p \
     -graph_type $gtype \
     -m $m

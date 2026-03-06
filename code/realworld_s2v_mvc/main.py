@@ -1,6 +1,6 @@
 import numpy as np
 import networkx as nx
-import cPickle as cp
+import pickle as cp
 import random
 import ctypes
 import os
@@ -13,8 +13,17 @@ from mvc_lib import MvcLib
 sys.path.append( '%s/../memetracker' % os.path.dirname(os.path.realpath(__file__)) )
 from meme import *
 
+
+def extract_iter_from_model_path(path):
+    filename = os.path.basename(path)
+    stem = os.path.splitext(filename)[0]
+    try:
+        return int(stem.rsplit('_', 1)[1])
+    except (IndexError, ValueError):
+        return 0
+
 def gen_new_graphs(opt):
-    print 'generating new training graphs'
+    print('generating new training graphs')
     sys.stdout.flush()
     api.ClearTrainGraphs()
     for i in tqdm(range(100)):
@@ -29,8 +38,8 @@ def gen_new_graphs(opt):
 def greedy(G):
     covered_set = set()
     numCoveredEdges = 0
-    idxes = range(nx.number_of_nodes(G))
-    idxes = sorted(idxes, key=lambda x: len(nx.neighbors(G, x)), reverse=True)
+    idxes = list(range(nx.number_of_nodes(G)))
+    idxes = sorted(idxes, key=lambda x: G.degree(x), reverse=True)
     pos = 0
     while numCoveredEdges < nx.number_of_edges(G):
         new_action = idxes[pos]
@@ -39,20 +48,27 @@ def greedy(G):
             if neigh not in covered_set:
                 numCoveredEdges += 1
         pos += 1
-    print 'done'
+    print('done')
     return len(covered_set)
 
 if __name__ == '__main__':
     api = MvcLib(sys.argv)
-    
+
     opt = {}
     for i in range(1, len(sys.argv), 2):
         opt[sys.argv[i][1:]] = sys.argv[i + 1]
-    
+
     g_undirected, _ = build_full_graph('%s/InfoNet5000Q1000NEXP.txt' % opt['data_root'],'undirected')
     print(nx.number_of_nodes(g_undirected))
     print(nx.number_of_edges(g_undirected))
-    print greedy(g_undirected)
+    print(greedy(g_undirected))
+
+    start_iter = 0
+    if 'load_model' in opt:
+        start_iter = extract_iter_from_model_path(opt['load_model'])
+        print('resuming from', opt['load_model'], 'at iter', start_iter)
+        sys.stdout.flush()
+        api.LoadModel(opt['load_model'])
 
     api.InsertGraph(g_undirected, is_test=True)
 
@@ -65,7 +81,7 @@ if __name__ == '__main__':
     eps_start = 1.0
     eps_end = 0.05
     eps_step = 10000.0
-    for iter in range(int(opt['max_iter'])):
+    for iter in range(start_iter, int(opt['max_iter'])):
         if iter and iter % 5000 == 0:
             gen_new_graphs(opt)
         eps = eps_end + max(0., (eps_start - eps_end) * (eps_step - iter) / eps_step)
@@ -74,7 +90,7 @@ if __name__ == '__main__':
 
         if iter % 300 == 0:
             frac = api.lib.Test(0)
-            print 'iter', iter, 'eps', eps, 'average pct of vc: ', frac
+            print('iter', iter, 'eps', eps, 'average pct of vc: ', frac)
             sys.stdout.flush()
             model_path = '%s/iter_%d.model' % (opt['save_dir'], iter)
             api.SaveModel(model_path)

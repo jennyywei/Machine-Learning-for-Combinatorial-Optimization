@@ -47,7 +47,7 @@ def build_full_graph(pathtofile, graphtype):
 
 		times.append(float(entries[-1]))
 
-	for edge in g.edges_iter(data=True):
+	for edge in g.edges(data=True):
 		src_idx = edge[0]
 		dst_idx = edge[1]
 		w = edge[2]['weight']
@@ -59,7 +59,7 @@ def build_full_graph(pathtofile, graphtype):
 def get_mvc_graph(ig,prob_quotient=10):
 	g = ig.copy()
 	# flip coin for each edge, remove it if coin has value > edge probability ('weight')
-	for edge in g.edges_iter(data=True):
+	for edge in list(g.edges(data=True)):
 		src_idx = edge[0]
 		dst_idx = edge[1]
 		w = edge[2]['weight']
@@ -69,12 +69,14 @@ def get_mvc_graph(ig,prob_quotient=10):
 
 	# get set of nodes in largest component
 	cc = sorted(nx.connected_components(g), key = len, reverse=True)
+	if len(cc) == 0:
+		return nx.Graph()
 	lcc = cc[0]
 
 	# remove all nodes not in largest component
 	numrealnodes = 0
 	node_map = {}
-	for node in g.nodes():
+	for node in list(g.nodes()):
 		if node not in lcc:
 			g.remove_node(node)
 			continue
@@ -83,7 +85,7 @@ def get_mvc_graph(ig,prob_quotient=10):
 
 	# re-create the largest component with nodes indexed from 0 sequentially
 	g2 = nx.Graph()
-	for edge in g.edges_iter(data=True):
+	for edge in g.edges(data=True):
 		src_idx = node_map[edge[0]]
 		dst_idx = node_map[edge[1]]
 		w = edge[2]['weight']
@@ -94,7 +96,7 @@ def get_mvc_graph(ig,prob_quotient=10):
 def get_scp_graph(ig,prob_quotient=10):
 	g = ig.copy()
 	# flip coin for each edge, remove it if coin has value > edge probability ('weight')
-	for edge in g.edges_iter(data=True):
+	for edge in list(g.edges(data=True)):
 		src_idx = edge[0]
 		dst_idx = edge[1]
 		w = edge[2]['weight']
@@ -105,7 +107,7 @@ def get_scp_graph(ig,prob_quotient=10):
 	# remove nodes with in-degree and out-degree both 0
 	numrealnodes = 0
 	node_map = {}
-	for node in g.nodes():
+	for node in list(g.nodes()):
 		if g.degree(node) == 0:
 			g.remove_node(node)
 			continue
@@ -114,7 +116,7 @@ def get_scp_graph(ig,prob_quotient=10):
 
 	# re-index nodes from 0 sequentially
 	g2 = nx.DiGraph()
-	for edge in g.edges_iter(data=True):
+	for edge in g.edges(data=True):
 		src_idx = node_map[edge[0]]
 		dst_idx = node_map[edge[1]]
 		g2.add_edge(src_idx,dst_idx)
@@ -195,4 +197,3 @@ if __name__ == '__main__':
 
 	print(nx.number_of_nodes(g_directed))
 	print(nx.number_of_edges(g_directed))
-

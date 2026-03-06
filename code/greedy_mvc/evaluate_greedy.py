@@ -37,13 +37,42 @@ except ImportError:
 # Graph I/O
 # ---------------------------------------------------------------------------
 
+def normalize_graph(g):
+    legacy_adj = getattr(g, 'adj', None)
+    legacy_node = getattr(g, 'node', None)
+    if isinstance(legacy_adj, dict) and isinstance(legacy_node, dict):
+        rebuilt = nx.Graph()
+        rebuilt.graph.update(getattr(g, 'graph', {}))
+        for node, attrs in legacy_node.items():
+            rebuilt.add_node(node, **attrs)
+        for u, nbrs in legacy_adj.items():
+            for v, edge_attrs in nbrs.items():
+                if rebuilt.has_edge(u, v):
+                    continue
+                rebuilt.add_edge(u, v, **edge_attrs)
+        return rebuilt
+    return g
+
 def load_graphs(pkl_path, num_graphs):
     """Load sequentially-pickled networkx graphs from a file."""
     graphs = []
     with open(pkl_path, 'rb') as f:
         for _ in range(num_graphs):
-            graphs.append(pickle.load(f))
+            graphs.append(normalize_graph(pickle.load(f)))
     return graphs
+
+
+def load_opt_solutions(opt_path):
+    """Load pre-computed optimal solutions from the authors' opt pkl file.
+
+    Returns a list of optimal VC sizes, or None if file doesn't exist.
+    The opt file is a dict with key 'target' containing a list of optimal values.
+    """
+    if not os.path.isfile(opt_path):
+        return None
+    with open(opt_path, 'rb') as f:
+        data = pickle.load(f)
+    return [int(v) for v in data['target']]
 
 
 # ---------------------------------------------------------------------------
@@ -215,8 +244,13 @@ def load_s2v_results(csv_path):
 # Evaluation
 # ---------------------------------------------------------------------------
 
-def evaluate_on_graphs(graphs, s2v_results=None, skip_optimal=False):
-    """Run all methods on graphs, return list of per-graph result dicts."""
+def evaluate_on_graphs(graphs, s2v_results=None, skip_optimal=False,
+                       precomputed_opt=None):
+    """Run all methods on graphs, return list of per-graph result dicts.
+
+    If precomputed_opt is provided (list of optimal VC sizes from the authors),
+    those values are used instead of computing optimal solutions.
+    """
     results = []
     for i, G in enumerate(graphs):
         row = {
@@ -238,7 +272,10 @@ def evaluate_on_graphs(graphs, s2v_results=None, skip_optimal=False):
         row['dynamic_time'] = t
 
         # Optimal
-        if not skip_optimal:
+        if precomputed_opt is not None and i < len(precomputed_opt):
+            row['optimal_size'] = precomputed_opt[i]
+            row['optimal_time'] = 0.0
+        elif not skip_optimal:
             sz, cover, t = optimal_mvc(G)
             if sz is not None:
                 assert verify_vertex_cover(G, cover), f'Optimal invalid on graph {i}'
@@ -365,6 +402,7 @@ if __name__ == '__main__':
     num_graphs = int(opt.get('num_graphs', '100'))
     output_dir = opt.get('output_dir', 'results/greedy')
     s2v_results_path = opt.get('s2v_results', '')
+    opt_sol_path = opt.get('opt_sol', '')
     skip_optimal = opt.get('skip_optimal', '0') == '1'
     save_csv_flag = opt.get('save_csv', '0') == '1'
 
@@ -378,7 +416,13 @@ if __name__ == '__main__':
         print(f'Loading S2V-DQN results from {s2v_results_path}')
         s2v = load_s2v_results(s2v_results_path)
 
-    results = evaluate_on_graphs(graphs, s2v_results=s2v, skip_optimal=skip_optimal)
+    precomputed_opt = None
+    if opt_sol_path:
+        print(f'Loading pre-computed optimal solutions from {opt_sol_path}')
+        precomputed_opt = load_opt_solutions(opt_sol_path)
+
+    results = evaluate_on_graphs(graphs, s2v_results=s2v, skip_optimal=skip_optimal,
+                                 precomputed_opt=precomputed_opt)
 
     label = os.path.basename(data_test).replace('.pkl', '')
     print_table(results, label)

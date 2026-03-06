@@ -1,6 +1,8 @@
 #!/bin/bash
 
-data_root=../../data/memetracker
+set -euo pipefail
+
+data_root=../../data/realworld_data/memetracker
 
 # folder to save results
 output_dir=results/greedy

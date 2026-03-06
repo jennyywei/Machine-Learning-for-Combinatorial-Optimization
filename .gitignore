@@ -42,3 +42,7 @@ results/
 *.exe
 *.out
 *.app
+
+# Slurm files, pdf files
+slurm*
+*.pdf

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 result_root=results/dqn-meme
 
 # max belief propagation iteration
@@ -9,7 +11,7 @@ max_bp_iter=1
 embed_dim=64
 
 # gpu card id
-dev_id=5
+dev_id=${DEV_ID:-5}
 
 # max batch size for training/testing
 batch_size=64
@@ -34,7 +36,7 @@ max_n=300
 num_env=10
 mem_size=500000
 prob_q=7
-max_iter=1000000
+max_iter=${REALWORLD_MVC_MAX_ITER:-100000}
 
 # folder to save the trained model
 save_dir=$result_root/embed-$embed_dim-nbp-$max_bp_iter-rh-$reg_hidden-prob_q-$prob_q
@@ -44,10 +46,19 @@ then
     mkdir -p $save_dir
 fi
 
+lib_so=mvc_lib/build/dll/libmvc.so
+if [ ! -f "$lib_so" ]; then
+    echo "building real-world mvc shared library"
+    if [ ! -f mvc_lib/Makefile ] && [ -f mvc_lib/Makefile.example ]; then
+        cp mvc_lib/Makefile.example mvc_lib/Makefile
+    fi
+    (cd mvc_lib && make -j4)
+fi
+
 python evaluate.py \
     -prob_q $prob_q \
     -n_step $n_step \
-    -data_root ../../data/memetracker \
+    -data_root ../../data/realworld_data/memetracker \
     -min_n $min_n \
     -max_n $max_n \
     -num_env $num_env \

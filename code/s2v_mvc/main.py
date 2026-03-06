@@ -10,7 +10,42 @@ from tqdm import tqdm
 sys.path.append( '%s/mvc_lib' % os.path.dirname(os.path.realpath(__file__)) )
 from mvc_lib import MvcLib
 
-n_valid = 100
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+DEFAULT_N_VALID = 100
+
+
+def extract_iter_from_model_path(path):
+    filename = os.path.basename(path)
+    stem = os.path.splitext(filename)[0]
+    try:
+        return int(stem.rsplit('_iter_', 1)[1])
+    except (IndexError, ValueError):
+        return 0
+
+
+def resolve_path(path):
+    if os.path.isabs(path):
+        return path
+    if os.path.exists(path):
+        return path
+    return os.path.join(SCRIPT_DIR, path)
+
+
+def normalize_graph(g):
+    legacy_adj = getattr(g, 'adj', None)
+    legacy_node = getattr(g, 'node', None)
+    if isinstance(legacy_adj, dict) and isinstance(legacy_node, dict):
+        rebuilt = nx.Graph()
+        rebuilt.graph.update(getattr(g, 'graph', {}))
+        for node, attrs in legacy_node.items():
+            rebuilt.add_node(node, **attrs)
+        for u, nbrs in legacy_adj.items():
+            for v, edge_attrs in nbrs.items():
+                if rebuilt.has_edge(u, v):
+                    continue
+                rebuilt.add_edge(u, v, **edge_attrs)
+        return rebuilt
+    return g
 
 def gen_graph(opt):
     max_n = int(opt['max_n'])
@@ -33,11 +68,27 @@ def gen_new_graphs(opt):
         api.InsertGraph(g, is_test=False)
 
 def PrepareValidData(opt):
+    if 'data_valid' in opt:
+        data_valid = resolve_path(opt['data_valid'])
+        print('loading validation graphs from', data_valid)
+        sys.stdout.flush()
+        count = 0
+        with open(data_valid, 'rb') as f:
+            while True:
+                try:
+                    g = cp.load(f)
+                except EOFError:
+                    break
+                api.InsertGraph(normalize_graph(g), is_test=True)
+                count += 1
+        return count
+
     print('generating validation graphs')
     sys.stdout.flush()
-    for i in tqdm(range(n_valid)):
+    for i in tqdm(range(DEFAULT_N_VALID)):
         g = gen_graph(opt)
         api.InsertGraph(g, is_test=True)
+    return DEFAULT_N_VALID
 
 def find_model_file(opt):
     max_n = int(opt['max_n'])
@@ -80,13 +131,21 @@ if __name__ == '__main__':
     for i in range(1, len(sys.argv), 2):
         opt[sys.argv[i][1:]] = sys.argv[i + 1]
 
-    model_file = find_model_file(opt)
-    if model_file is not None:
-        print('loading', model_file)
+    start_iter = 0
+    if 'load_model' in opt:
+        model_file = opt['load_model']
+        start_iter = extract_iter_from_model_path(model_file)
+        print('resuming from', model_file, 'at iter', start_iter)
         sys.stdout.flush()
         api.LoadModel(model_file)
+    else:
+        model_file = find_model_file(opt)
+        if model_file is not None:
+            print('loading', model_file)
+            sys.stdout.flush()
+            api.LoadModel(model_file)
 
-    PrepareValidData(opt)
+    n_valid = PrepareValidData(opt)
 
     # startup
     gen_new_graphs(opt)
@@ -97,7 +156,7 @@ if __name__ == '__main__':
     eps_start = 1.0
     eps_end = 0.05
     eps_step = 10000.0
-    for iter in range(int(opt['max_iter'])):
+    for iter in range(start_iter, int(opt['max_iter'])):
         if iter and iter % 5000 == 0:
             gen_new_graphs(opt)
         eps = eps_end + max(0., (eps_start - eps_end) * (eps_step - iter) / eps_step)

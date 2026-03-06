@@ -7,14 +7,17 @@ import sys
 class MvcLib(object):
 
     def __init__(self, args):
-        dir_path = os.path.dirname(os.path.realpath(__file__))        
-        self.lib = ctypes.CDLL('%s/build/dll/libmvc.so' % dir_path)
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        local_lib = os.path.join(dir_path, 'build', 'dll', 'libmvc.so')
+        if not os.path.isfile(local_lib):
+            raise FileNotFoundError('missing real-world mvc library: %s' % local_lib)
+        self.lib = ctypes.CDLL(local_lib)
 
         self.lib.Fit.restype = ctypes.c_double
         self.lib.Test.restype = ctypes.c_double
         self.lib.GetSol.restype = ctypes.c_double
         arr = (ctypes.c_char_p * len(args))()
-        arr[:] = args
+        arr[:] = [a.encode() if isinstance(a, str) else a for a in args]
         self.lib.Init(len(args), arr)
         self.ngraph_train = 0
         self.ngraph_test = 0
@@ -50,12 +53,14 @@ class MvcLib(object):
         self.lib.InsertGraph(is_test, t, n_nodes, n_edges, e_froms, e_tos)
     
     def LoadModel(self, path_to_model):
-        p = ctypes.cast(path_to_model, ctypes.c_char_p)
-        self.lib.LoadModel(p)
+        if isinstance(path_to_model, str):
+            path_to_model = path_to_model.encode()
+        self.lib.LoadModel(path_to_model)
 
     def SaveModel(self, path_to_model):
-        p = ctypes.cast(path_to_model, ctypes.c_char_p)
-        self.lib.SaveModel(p)
+        if isinstance(path_to_model, str):
+            path_to_model = path_to_model.encode()
+        self.lib.SaveModel(path_to_model)
 
     def GetSol(self, gid, maxn):
         sol = (ctypes.c_int * (maxn + 10))()
